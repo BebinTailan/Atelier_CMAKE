@@ -23,7 +23,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: calculator-build
-          path: build/       
+          path: build/      
 
  
   Test_Add:
@@ -111,21 +111,43 @@ jobs:
       - name: Test fonction div
         run: ./src/calculator div 1 5
   
+  # --- JOB MODIFIÉ CI-DESSOUS ---
   Test_Carre:
     runs-on: ubuntu-latest
     needs: Compilation
     steps:
-      - name: Telechargement de l'artifact
-        uses: actions/download-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+          make
+
+      - name: Run test "car" and capture report
+        run: |
+          cd build
+          set -e
+          echo "== Test car 5 ==" > report.txt
+          ./src/calculator car 5 | tee -a report.txt
+          echo "Exit code: $?" >> report.txt
+
+      - name: Upload report as artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: calculator-build
+          name: test-carre-report
+          path: build/report.txt
+          retention-days: 14
 
-    
-      - name: Donner les permissions d'execution
-        run: chmod +x ./src/calculator
-
-      - name: Test fonction car
-        run: ./src/calculator car 5
+      - name: Job summary (facultatif mais pratique)
+        run: |
+          echo "### Résultat du test *carré*" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat build/report.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
 
   Deploy:
